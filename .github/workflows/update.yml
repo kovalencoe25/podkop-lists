@@ -1,0 +1,46 @@
+name: Update domain lists
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # каждые 6 часов
+  workflow_dispatch:         # кнопка "запустить вручную"
+  push:
+    branches: [ main ]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/**'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make script executable
+        run: chmod +x scripts/convert.sh
+
+      - name: Run conversion
+        run: ./scripts/convert.sh
+
+      - name: Show results
+        run: |
+          echo "=== apple.txt ==="
+          head -5 apple.txt
+          echo "=== hoyoverse.txt ==="
+          head -5 hoyoverse.txt
+          echo "=== steam.txt ==="
+          head -5 steam.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apple.txt hoyoverse.txt steam.txt
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update domain lists $(date -u +%Y-%m-%d_%H:%M)"
+            git push
+          fi
